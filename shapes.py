@@ -4,6 +4,7 @@ import numpy as np
 # used only at once
 found_result = False
 
+IMG_PATH = 'photo5310294000407785994.jpg'
 
 def empty(a):
     pass
@@ -117,15 +118,15 @@ def get_contours(img, imgContour, useTracker):
 
             # cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 5)
 
-            cv2.putText(imgContour, "Points: " + str(len(approx)), (x + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, .7,
+            cv2.putText(imgContour, "Points: " + str(len(approx)), (x + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 1,
                         (0, 0, 0), 4)
-            cv2.putText(imgContour, "Area: " + str(int(area)), (x + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 0.7,
-                        (0, 0, 0), 4)
-
-            cv2.putText(imgContour, crack_type, (x + 20, y + 100), cv2.FONT_HERSHEY_COMPLEX, 0.7,
+            cv2.putText(imgContour, "Area: " + str(int(area)), (x + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 1,
                         (0, 0, 0), 4)
 
-            cv2.putText(imgContour, severity, (x + 20, y + 140), cv2.FONT_HERSHEY_COMPLEX, 0.7,
+            cv2.putText(imgContour, crack_type, (x + 20, y + 100), cv2.FONT_HERSHEY_COMPLEX, 1,
+                        (0, 0, 0), 4)
+
+            cv2.putText(imgContour, severity, (x + 20, y + 140), cv2.FONT_HERSHEY_COMPLEX, 1,
                         (0, 255, 0), 4)
 
             return True
@@ -137,7 +138,6 @@ DEFAULT_TH1 = 159
 # this is the default value for threshold 2
 DEFAULT_TH2 = 99
 
-IMG_PATH = 'photo_2021-04-16_13-24-19 (1).jpg'
 img = cv2.imread(IMG_PATH)
 imgContour = img.copy()
 imgBlur = cv2.GaussianBlur(img, (11, 11), 1)
@@ -196,8 +196,11 @@ while True:
     kernel = np.ones((5, 5))
     imgDil = cv2.dilate(imgCanny, kernel, iterations=1)
     get_contours(imgDil, imgContour, True)
-    imgStack = stackImages(0.5, ([img, imgCanny],
+    imgStack = stackImages(0.3, ([img, imgCanny],
                                  [imgDil, imgContour]))
-    cv2.imshow("Result", imgStack)
+    cv2.imshow("original image", cv2.resize(img, (960, 540)))
+    cv2.imshow("imgCanny", cv2.resize(imgCanny, (960, 540)))
+    cv2.imshow("imgDil", cv2.resize(imgDil, (960, 540)))
+    cv2.imshow("Result", cv2.resize(imgContour, (960, 540)))
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

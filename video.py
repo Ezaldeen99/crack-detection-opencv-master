@@ -6,7 +6,7 @@ frameHeight = 600
 FILE_PATH = 'videos\\'
 
 # put your video name here
-FILE_NAME = 'IMG_9230.MP4'
+FILE_NAME = 'My Video5 (1).mp4'
 
 cap = cv2.VideoCapture(FILE_PATH + FILE_NAME)
 
@@ -30,8 +30,8 @@ class Crack:
 
 cv2.namedWindow("Parameters")
 cv2.resizeWindow("Parameters", 900, 600)
-cv2.createTrackbar("Threshold1", "Parameters", 99, 255, empty)
-cv2.createTrackbar("Threshold2", "Parameters", 99, 255, empty)
+cv2.createTrackbar("Threshold1", "Parameters", 50, 255, empty)
+cv2.createTrackbar("Threshold2", "Parameters", 150, 255, empty)
 cv2.createTrackbar("Area", "Parameters", 5000, 30000, empty)
 
 # Tran limits
@@ -125,9 +125,13 @@ def get_contours(img, imgContour):
             x = int(center[0])
             y = int(center[1])
             rect = cv2.minAreaRect(approx)
-            print(x)
+
             box = cv2.boxPoints(rect)
             box = np.int0(box)
+            if abs(angle) > 45:
+                temp = h
+                h = w
+                w = temp
 
             if w < 100 and h > w * 2:
                 severity = get_severity("Long", area)
@@ -151,7 +155,7 @@ def get_contours(img, imgContour):
 
             # cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 5)
 
-            cv2.putText(imgContour, "Points: " + str(len(approx)), (x + 20, y + 20), cv2.QT_FONT_NORMAL, 17,
+            cv2.putText(imgContour, "Points: " + str(len(approx)), (x + 20, y + 20), cv2.QT_FONT_NORMAL, 1,
                         (0, 0, 0), 4)
             cv2.putText(imgContour, "Area: " + str(int(area)), (x + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 1,
                         (0, 0, 0), 4)
@@ -177,7 +181,7 @@ while success:
     kernel = np.ones((7, 7))
     imgDil = cv2.dilate(imgCanny, kernel, iterations=1)
     get_contours(imgDil, imgContour)
-    imgStack = stackImages(0.3, ([img, imgCanny],
+    imgStack = stackImages(0.5, ([img, imgCanny],
                                  [imgDil, imgContour]))
     cv2.imshow("Result", imgStack)
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -226,14 +230,28 @@ LANE_WIDTH = 3
 
 AC_INDEX = 100 - 40 * (Aleg.low / (0.02 * LANE_WIDTH * 70) + Aleg.med / (0.02 * LANE_WIDTH * 30) + Aleg.hi / (
         0.02 * LANE_WIDTH * 10))
+print(AC_INDEX)
+print(Aleg.low)
+print(Aleg.med)
+print(Aleg.hi)
+
 TC_INDEX = 100 - 20 * (Transverse.low / (0.02 * LANE_WIDTH * 15.1) + Transverse.med / (
             0.02 * LANE_WIDTH * 7.5) + 40 * Transverse.hi / (
                                0.02 * LANE_WIDTH * 1.9))
+
+print(TC_INDEX)
+
 LC_INDEX = 100 - 40 * (Longitudinal.low / (0.02 * LANE_WIDTH * 350) + Longitudinal.med / (
             0.02 * LANE_WIDTH * 200) + Longitudinal.hi / (
                                0.02 * LANE_WIDTH * 75))
+
+print(LC_INDEX)
+
 PATCH_INDEX = 100 - 40 * (Hole.low / (0.02 * LANE_WIDTH * 160) + Hole.med / (0.02 * LANE_WIDTH * 80) + Hole.hi / (
         0.02 * LANE_WIDTH * 40))
 
+print(PATCH_INDEX)
+
 SCR = 100 - (100 - AC_INDEX + 100 - LC_INDEX + 100 - TC_INDEX + 100 - PATCH_INDEX)
 PCR = 0.6 * SCR + 40
+print(PCR)
