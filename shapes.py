@@ -1,10 +1,13 @@
+import math
+
 import cv2
 import numpy as np
 
 # used only at once
 found_result = False
 
-IMG_PATH = 'photo5310294000407785994.jpg'
+IMG_PATH = 'photo_2021-04-16_13-22-30.jpg'
+
 
 def empty(a):
     pass
@@ -83,7 +86,6 @@ def get_contours(img, imgContour, useTracker):
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
             # print(len(approx))
             # print(peri)
-            # x, y, w, h = cv2.boundingRect(approx)
             center, boundary, angle = cv2.minAreaRect(approx)
             # crack width
             w = int(boundary[0])
@@ -99,37 +101,44 @@ def get_contours(img, imgContour, useTracker):
                 h = w
                 w = temp
 
-            aspect_ratio = min(w, h) / max(w, h)
-
+            # radius = peri / (2 * math.pi)
+            # print(radius)
+            # print(cv2.isContourConvex(approx))
+            # circleArea = peri * radius
             if w < 100 and h > w * 2:
                 severity = get_severity("Long", area)
                 crack_type = 'Longitudinal '
             elif w > h * 2 and h < 100:
                 severity = get_severity("Tran", area)
                 crack_type = 'Transverse '
-            elif len(approx) > 5:
-                severity = get_severity("Aleg", area)
-                crack_type = 'Aleg'
-            else:
+            elif cv2.isContourConvex(approx):
                 severity = get_severity("hole", area)
                 crack_type = 'hole'
+            # elif len(approx) > 5 and x + h > 100 and w + y > 100:
+            #     severity = get_severity("Aleg", area)
+            #     crack_type = 'Aleg'
+            else:
+                severity = get_severity("Aleg", area)
+                crack_type = 'Aleg'
 
             cv2.drawContours(imgContour, [box], 0, (0, 0, 255), 2)
+            x1, y1, w1, h1 = cv2.boundingRect(approx)
+            cv2.rectangle(imgContour, (x1, y1), (x1 + w1, y1 + h1), (0, 255, 0), 5)
 
-            # cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 5)
-
-            cv2.putText(imgContour, "Points: " + str(len(approx)), (x + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 1,
+            # cv2.putText(imgContour, "Points: " + str(len(approx)), (x + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 1,
+            #             (0, 0, 0), 4)
+            # cv2.putText(imgContour, "circleArea: " + str(circleArea), (x + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 1,
+            #             (0, 0, 0), 4)
+            cv2.putText(imgContour, "Area: " + str(int(area)), (x + 20, y + 75), cv2.FONT_HERSHEY_COMPLEX, 1,
                         (0, 0, 0), 4)
-            cv2.putText(imgContour, "Area: " + str(int(area)), (x + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 1,
+
+            cv2.putText(imgContour, crack_type, (x + 20, y + 140), cv2.FONT_HERSHEY_COMPLEX, 1,
                         (0, 0, 0), 4)
 
-            cv2.putText(imgContour, crack_type, (x + 20, y + 100), cv2.FONT_HERSHEY_COMPLEX, 1,
-                        (0, 0, 0), 4)
-
-            cv2.putText(imgContour, severity, (x + 20, y + 140), cv2.FONT_HERSHEY_COMPLEX, 1,
+            cv2.putText(imgContour, severity, (x + 20, y + 180), cv2.FONT_HERSHEY_COMPLEX, 1,
                         (0, 255, 0), 4)
 
-            return True
+            return area
 
 
 # this is the default value for threshold 1
@@ -146,9 +155,9 @@ imgGray = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2GRAY)
 for threshold1 in range(255, 90, -2):
     if found_result:
         break
-# for threshold1 in range(90, 230, 2):
-#     if found_result:
-#         break
+    # for threshold1 in range(90, 230, 2):
+    #     if found_result:
+    #         break
     for threshold2 in range(95, 255, 2):
         imgCanny = cv2.Canny(imgGray, threshold1, threshold2)
         kernel = np.ones((5, 5))
