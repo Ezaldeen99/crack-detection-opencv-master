@@ -6,7 +6,7 @@ frameHeight = 600
 FILE_PATH = 'videos\\'
 
 # put your video name here
-FILE_NAME = 'My Video5 (1).mp4'
+FILE_NAME = 'IMG_9229.MP4'
 
 cap = cv2.VideoCapture(FILE_PATH + FILE_NAME)
 
@@ -32,27 +32,27 @@ cv2.namedWindow("Parameters")
 cv2.resizeWindow("Parameters", 900, 600)
 cv2.createTrackbar("Threshold1", "Parameters", 50, 255, empty)
 cv2.createTrackbar("Threshold2", "Parameters", 150, 255, empty)
-cv2.createTrackbar("Area", "Parameters", 5000, 30000, empty)
+cv2.createTrackbar("Area", "Parameters", 4, 10, empty)
 
 # Tran limits
-cv2.createTrackbar("Tran low", "Parameters", 10000, 30000, empty)
-cv2.createTrackbar("Tran med", "Parameters", 20000, 30000, empty)
-cv2.createTrackbar("Tran high", "Parameters", 30000, 40000, empty)
+cv2.createTrackbar("Tran low", "Parameters", 5, 10, empty)
+cv2.createTrackbar("Tran med", "Parameters", 7, 10, empty)
+cv2.createTrackbar("Tran high", "Parameters", 10, 10, empty)
 
 # Long limits
-cv2.createTrackbar("Long low", "Parameters", 10000, 30000, empty)
-cv2.createTrackbar("Long med", "Parameters", 20000, 30000, empty)
-cv2.createTrackbar("Long high", "Parameters", 30000, 40000, empty)
+cv2.createTrackbar("Long low", "Parameters", 5, 10, empty)
+cv2.createTrackbar("Long med", "Parameters", 7, 10, empty)
+cv2.createTrackbar("Long high", "Parameters", 10, 10, empty)
 
 # Aleg limits
-cv2.createTrackbar("Aleg low", "Parameters", 10000, 30000, empty)
-cv2.createTrackbar("Aleg med", "Parameters", 20000, 30000, empty)
-cv2.createTrackbar("Aleg high", "Parameters", 30000, 40000, empty)
+cv2.createTrackbar("Aleg low", "Parameters", 5, 10, empty)
+cv2.createTrackbar("Aleg med", "Parameters", 7, 10, empty)
+cv2.createTrackbar("Aleg high", "Parameters", 10, 10, empty)
 
 # hole limits
-cv2.createTrackbar("hole low", "Parameters", 10000, 50000, empty)
-cv2.createTrackbar("hole med", "Parameters", 20000, 70000, empty)
-cv2.createTrackbar("hole high", "Parameters", 30000, 80000, empty)
+cv2.createTrackbar("hole low", "Parameters", 5, 10, empty)
+cv2.createTrackbar("hole med", "Parameters", 7, 10, empty)
+cv2.createTrackbar("hole high", "Parameters", 10, 10, empty)
 
 
 def stackImages(scale, imgArray):
@@ -88,10 +88,10 @@ def stackImages(scale, imgArray):
     return ver
 
 
-def get_severity(param, area):
-    if area < cv2.getTrackbarPos(param + " low", "Parameters"):
+def get_severity(param, area, total_area):
+    if area < (cv2.getTrackbarPos(param + " low", "Parameters") * total_area / 1000):
         return 'low'
-    elif area < cv2.getTrackbarPos(param + " med", "Parameters"):
+    elif area < (cv2.getTrackbarPos(param + " med", "Parameters") * total_area / 1000):
         return 'Medium'
     else:
         return 'High'
@@ -99,27 +99,24 @@ def get_severity(param, area):
 
 def get_contours(img, imgContour):
     contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    # Calculate Moments
-    # moments = cv2.moments(img)
-    # Calculate Hu Moments
-    # huMoments = cv2.HuMoments(moments)
-    # for i in range(0, 7):
-    #     huMoments[i] = -1 * np.copysign(1.0, huMoments[i]) * np.log10(abs(huMoments[i]))
+    # find the width and height of the image
+    height, width, channels = imgContour.shape
+
+    # image area
+    total_area = height * width
 
     for cnt in contours:
         area = cv2.contourArea(cnt)
 
-        # areaMin = 15000
-        areaMin = cv2.getTrackbarPos("Area", "Parameters")
+        area_min = cv2.getTrackbarPos("Area", "Parameters") * total_area / 1000
 
-        if area > areaMin:
+        if area > area_min:
             cv2.drawContours(imgContour, cnt, -1, (255, 0, 255), 7)
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
-            # print(len(approx))
-            # print(peri)
-            # x, y, w, h = cv2.boundingRect(approx)
+
             center, boundary, angle = cv2.minAreaRect(approx)
+
             w = int(boundary[0])
             h = int(boundary[1])
             x = int(center[0])
@@ -134,20 +131,20 @@ def get_contours(img, imgContour):
                 w = temp
 
             if w < 100 and h > w * 2:
-                severity = get_severity("Long", area)
-                crack_type = 'Longitudinal '
+                severity = get_severity("Long", area, total_area)
+                crack_type = 'Longitudinal'
 
             elif w > h * 2 and h < 100:
-                severity = get_severity("Tran", area)
-                crack_type = 'Transverse '
+                severity = get_severity("Tran", area, total_area)
+                crack_type = 'Transverse'
 
-            elif len(approx) > 5 and abs(h - w) < 200:
-                severity = get_severity("Aleg", area)
-                crack_type = 'Aleg'
+            elif cv2.isContourConvex(approx):
+                severity = get_severity("hole", area, total_area)
+                crack_type = 'hole'
 
             else:
-                severity = get_severity("hole", area)
-                crack_type = 'hole'
+                severity = get_severity("Aleg", area, total_area)
+                crack_type = 'Aleg'
 
             cracks_results.append((severity, crack_type, area))
 
@@ -188,10 +185,6 @@ while success:
         break
     success, img = cap.read()
 
-LOW_LONG = 0
-MED_LONG = 0
-HI_LONG = 0
-
 Longitudinal = Crack(0, 0, 0)
 Transverse = Crack(0, 0, 0)
 Aleg = Crack(0, 0, 0)
@@ -202,21 +195,21 @@ for crack in cracks_results:
         Longitudinal.low += crack[2]
     elif crack[1] == 'Longitudinal' and crack[0] == 'Medium':
         Longitudinal.med += crack[2]
-    elif crack[1] == 'Longitudinal' and crack[0] == 'High':
+    elif crack[1] == 'Longitudinal':
         Longitudinal.hi += crack[2]
 
     elif crack[1] == 'Transverse' and crack[0] == 'low':
         Transverse.low += crack[2]
     elif crack[1] == 'Transverse' and crack[0] == 'Medium':
         Transverse.med += crack[2]
-    elif crack[1] == 'Transverse' and crack[0] == 'High':
+    elif crack[1] == 'Transverse':
         Transverse.hi += crack[2]
 
     elif crack[1] == 'Aleg' and crack[0] == 'low':
         Aleg.low += crack[2]
     elif crack[1] == 'Aleg' and crack[0] == 'Medium':
         Aleg.med += crack[2]
-    elif crack[1] == 'Aleg' and crack[0] == 'High':
+    elif crack[1] == 'Aleg':
         Aleg.hi += crack[2]
 
     elif crack[1] == 'hole' and crack[0] == 'low':
@@ -227,31 +220,34 @@ for crack in cracks_results:
         Hole.hi += crack[2]
 
 LANE_WIDTH = 3
-
-AC_INDEX = 100 - 40 * (Aleg.low / (0.02 * LANE_WIDTH * 70) + Aleg.med / (0.02 * LANE_WIDTH * 30) + Aleg.hi / (
+# assume
+# 1 PX = 0.00086805544619423 ft
+ft = 0.0000000086805544619423
+AC_INDEX = 100 - 40 * (
+        Aleg.low * ft / (0.02 * LANE_WIDTH * 70) + Aleg.med * ft / (0.02 * LANE_WIDTH * 30) + Aleg.hi * ft / (
         0.02 * LANE_WIDTH * 10))
-print(AC_INDEX)
-print(Aleg.low)
-print(Aleg.med)
-print(Aleg.hi)
 
-TC_INDEX = 100 - 20 * (Transverse.low / (0.02 * LANE_WIDTH * 15.1) + Transverse.med / (
-            0.02 * LANE_WIDTH * 7.5) + 40 * Transverse.hi / (
+TC_INDEX = 100 - 20 * (Transverse.low * ft / (0.02 * LANE_WIDTH * 15.1) + Transverse.med * ft / (
+        0.02 * LANE_WIDTH * 7.5) + 40 * Transverse.hi * ft / (
                                0.02 * LANE_WIDTH * 1.9))
 
-print(TC_INDEX)
-
-LC_INDEX = 100 - 40 * (Longitudinal.low / (0.02 * LANE_WIDTH * 350) + Longitudinal.med / (
-            0.02 * LANE_WIDTH * 200) + Longitudinal.hi / (
+LC_INDEX = 100 - 40 * (Longitudinal.low * ft / (0.02 * LANE_WIDTH * 350) + Longitudinal.med * ft / (
+        0.02 * LANE_WIDTH * 200) + Longitudinal.hi * ft / (
                                0.02 * LANE_WIDTH * 75))
 
-print(LC_INDEX)
-
-PATCH_INDEX = 100 - 40 * (Hole.low / (0.02 * LANE_WIDTH * 160) + Hole.med / (0.02 * LANE_WIDTH * 80) + Hole.hi / (
+PATCH_INDEX = 100 - 40 * (
+        Hole.low * ft / (0.02 * LANE_WIDTH * 160) + Hole.med * ft / (0.02 * LANE_WIDTH * 80) + Hole.hi * ft / (
         0.02 * LANE_WIDTH * 40))
-
-print(PATCH_INDEX)
 
 SCR = 100 - (100 - AC_INDEX + 100 - LC_INDEX + 100 - TC_INDEX + 100 - PATCH_INDEX)
 PCR = 0.6 * SCR + 40
+
 print(PCR)
+if PCR <= 60:
+    print('poor')
+elif PCR <= 84:
+    print('FAIR')
+elif PCR <= 94:
+    print('FAIR')
+else:
+    print('EXCELLENT')
