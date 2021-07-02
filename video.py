@@ -30,8 +30,8 @@ class Crack:
 
 cv2.namedWindow("Parameters")
 cv2.resizeWindow("Parameters", 900, 600)
-cv2.createTrackbar("Threshold1", "Parameters", 50, 255, empty)
-cv2.createTrackbar("Threshold2", "Parameters", 150, 255, empty)
+cv2.createTrackbar("Threshold1", "Parameters", 70, 255, empty)
+cv2.createTrackbar("Threshold2", "Parameters", 140, 255, empty)
 cv2.createTrackbar("Area", "Parameters", 4, 10, empty)
 
 # Tran limits
@@ -143,12 +143,13 @@ def get_contours(img, imgContour):
                 crack_type = 'hole'
 
             else:
+                print(len(approx))
                 severity = get_severity("Aleg", area, total_area)
                 crack_type = 'Aleg'
 
             cracks_results.append((severity, crack_type, area))
 
-            cv2.drawContours(imgContour, [box], 0, (0, 0, 255), 2)
+            # cv2.drawContours(imgContour, [box], 0, (0, 0, 255), 2)
 
             # cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 5)
 
@@ -168,12 +169,11 @@ success, img = cap.read()
 while success:
 
     imgContour = img.copy()
-    imgBlur = cv2.GaussianBlur(img, (7, 7), 1)
+    imgBlur = cv2.GaussianBlur(img, (21, 21), 1)
     imgGray = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2GRAY)
     threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")
     threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")
-    # threshold1 = 255
-    # threshold2 = 128
+
     imgCanny = cv2.Canny(imgGray, threshold1, threshold2)
     kernel = np.ones((7, 7))
     imgDil = cv2.dilate(imgCanny, kernel, iterations=1)
@@ -227,17 +227,15 @@ AC_INDEX = 100 - 40 * (
         Aleg.low * ft / (0.02 * LANE_WIDTH * 70) + Aleg.med * ft / (0.02 * LANE_WIDTH * 30) + Aleg.hi * ft / (
         0.02 * LANE_WIDTH * 10))
 
-TC_INDEX = 100 - 20 * (Transverse.low * ft / (0.02 * LANE_WIDTH * 15.1) + Transverse.med * ft / (
-        0.02 * LANE_WIDTH * 7.5) + 40 * Transverse.hi * ft / (
-                               0.02 * LANE_WIDTH * 1.9))
+TC_INDEX = 100 - 20 * (Transverse.low * ft / (LANE_WIDTH * 15.1) + Transverse.med * ft / (
+        LANE_WIDTH * 7.5) + 40 * Transverse.hi * ft / (
+                               LANE_WIDTH * 1.9))
 
-LC_INDEX = 100 - 40 * (Longitudinal.low * ft / (0.02 * LANE_WIDTH * 350) + Longitudinal.med * ft / (
-        0.02 * LANE_WIDTH * 200) + Longitudinal.hi * ft / (
-                               0.02 * LANE_WIDTH * 75))
+LC_INDEX = 100 - 40 * (Longitudinal.low * ft / (0.02 * 350) + Longitudinal.med * ft / (
+        0.02 * 200) + Longitudinal.hi * ft / (
+                               0.02 * 75))
 
-PATCH_INDEX = 100 - 40 * (
-        Hole.low * ft / (0.02 * LANE_WIDTH * 160) + Hole.med * ft / (0.02 * LANE_WIDTH * 80) + Hole.hi * ft / (
-        0.02 * LANE_WIDTH * 40))
+PATCH_INDEX = 100 - 40 * (Hole.low + Hole.med + Hole.low) * ft / (0.02 * LANE_WIDTH * 80)
 
 SCR = 100 - (100 - AC_INDEX + 100 - LC_INDEX + 100 - TC_INDEX + 100 - PATCH_INDEX)
 PCR = 0.6 * SCR + 40

@@ -6,7 +6,7 @@ import numpy as np
 # used only at once
 found_result = False
 
-IMG_PATH = 'GOPR0507.JPG'
+IMG_PATH = 'GOPR0513.JPG'
 
 
 def empty(a):
